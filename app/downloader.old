@@ -1,0 +1,56 @@
+import os
+import asyncio
+import time
+
+from yt_dlp import YoutubeDL
+from aiogram.types import Message
+
+
+
+
+
+def yt_download_sync(url: Message, progress_queue: asyncio.Queue, loop, path: str) -> list:
+
+
+    def my_hook(d):
+        if d['status'] == 'downloading':
+            asyncio.run_coroutine_threadsafe(progress_queue.put(d.get("_percent_str")), loop)
+        if d['status'] == 'finished':
+            asyncio.run_coroutine_threadsafe(progress_queue.put("DONE"), loop)
+
+    ydl_opts = {
+        "format": "bv*[ext=mp4]+ba[ext=m4a]/mp4",
+        "outtmpl": os.path.join(path, "%(title)s.%(ext)s"),
+        "progress_hooks": [my_hook],
+        "quiet": True,
+        "socket_timeout": 10,  # 10 секунд на соединение
+        "http_chunk_size": 1048576,  # 1MB
+        "retries": 10,
+        "prefer_ffmpeg": True,
+        "merge_output_format": "mp4",
+        "cookiefile":"cookies.txt",
+	"postprocessors": [{
+    		"key": "FFmpegVideoConvertor",
+    		"preferedformat": "mp4"
+	}],
+	"postprocessor_args": {
+    		"FFmpegVideoConvertor": [
+        		"-vf", "setsar=1"
+    		]
+	}
+    }
+
+    with YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url.text, download=True)
+        paths = []
+
+        if info.get("_type") == "playlist":
+            for entry in info["entries"]:
+                if entry is None:
+                    continue
+                fname = (ydl.prepare_filename(entry))
+                paths.append(fname)
+        else:
+            paths.append(ydl.prepare_filename(info))
+    print(paths)
+    return paths

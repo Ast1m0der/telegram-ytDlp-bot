@@ -1,0 +1,93 @@
+import os
+import asyncio
+import time
+
+from yt_dlp import YoutubeDL
+from aiogram.types import Message
+
+
+
+
+def yt_download_sync(url: Message, progress_queue: asyncio.Queue, loop, path: str, res) -> list:
+
+    for i in range(len(res)):
+        if "✅" in res[i]:
+            v_res = i
+    print(v_res)
+    base_opts = {"quiet": True, "skip_download": True}
+    info = YoutubeDL(base_opts).extract_info(url.text, download=False)
+    results = []
+
+    if info.get("_type") == "playlist":
+        for entry in info["entries"]:
+            if entry is None:
+                continue
+            entry_url = entry.get("webpage_url")
+            path = _download_single(entry_url, progress_queue, loop, path, v_res)
+            results.append(path)
+
+    else:
+
+        path = _download_single(url.text, progress_queue, loop, path, v_res)
+        results.append(path)
+
+    return results
+
+
+
+def _download_single(url: str, progress_queue: asyncio.Queue, loop, path, v_res) -> str:
+
+    def my_hook(d):
+        if d['status'] == 'downloading':
+            asyncio.run_coroutine_threadsafe(progress_queue.put(d.get("_percent_str")), loop)
+        if d['status'] == 'finished':
+            asyncio.run_coroutine_threadsafe(progress_queue.put("DONE"), loop)
+
+    print("getting info")
+    info = YoutubeDL({"quiet": True, "skip_download": True}).extract_info(url, download=False)
+    print("info getted")
+    avail_res = ["4320","2160","1440","1080","720","480","360","240","140"]
+    is_video = not "music" in url
+    print(f"is_video passed{is_video}")
+    print(avail_res[v_res])
+    if is_video:
+        print("if enter")
+        ydl_opts = {
+        "format": f"bv*[ext=mp4][height={avail_res[v_res]}]+ba[ext=m4a]/mp4",
+        "outtmpl": os.path.join(path, "%(title)s.%(ext)s"),
+        "progress_hooks": [my_hook],
+        "quiet": True,
+        "retries": 10,
+        "prefer_ffmpeg": True,
+        "merge_output_format": "mp4",
+        "cookiefile":"cookies.txt",
+	"postprocessors": [{
+    		"key": "FFmpegVideoConvertor",
+    		"preferedformat": "mp4"
+	}]
+	}
+
+    else:
+        ydl_opts = {
+            "format": "bestaudio",
+            "outtmpl": os.path.join(path, "%(title)s.%(ext)s"),
+            "progress_hooks": [my_hook],
+            "quiet": True,
+            "retries": 10,
+            "prefer_ffmpeg": True,
+            "merge_output_format": "mp3",
+            "cookiefile": "cookies.txt",
+            "postprocessors": [{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "192",
+            }]
+        }
+    print(ydl_opts)
+    with YoutubeDL(ydl_opts) as ydl:
+        result = ydl.extract_info(url, download=True)
+        filepath = ydl.prepare_filename(result)
+
+    if is_video:
+        return filepath
+    return filepath.rsplit(".", 1)[0] + ".mp3"
