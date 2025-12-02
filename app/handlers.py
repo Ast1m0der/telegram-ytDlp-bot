@@ -28,6 +28,7 @@ async def cmd_settings(callback: CallbackQuery):
 
 @router.callback_query((F.data == "8K") | (F.data == "4K") | (F.data == "1440P") | (F.data == "1080P") | (F.data == "720P") | (F.data == "480P") | (F.data == "360P") | (F.data == "240P") | (F.data == "144P"))
 async def cmd_setres(callback: CallbackQuery):
+    await callback.answer("")
     for i,r in enumerate(kb.buttons):
         kb.buttons[i] = kb.buttons[i].replace("✅","")
         if r == callback.data:

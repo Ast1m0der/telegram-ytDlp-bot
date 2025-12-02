@@ -13,7 +13,6 @@ def yt_download_sync(url: Message, progress_queue: asyncio.Queue, loop, path: st
     for i in range(len(res)):
         if "✅" in res[i]:
             v_res = i
-    print(v_res)
     base_opts = {"quiet": True, "skip_download": True}
     info = YoutubeDL(base_opts).extract_info(url.text, download=False)
     results = []
@@ -43,15 +42,10 @@ def _download_single(url: str, progress_queue: asyncio.Queue, loop, path, v_res)
         if d['status'] == 'finished':
             asyncio.run_coroutine_threadsafe(progress_queue.put("DONE"), loop)
 
-    print("getting info")
     info = YoutubeDL({"quiet": True, "skip_download": True}).extract_info(url, download=False)
-    print("info getted")
     avail_res = ["4320","2160","1440","1080","720","480","360","240","140"]
     is_video = not "music" in url
-    print(f"is_video passed{is_video}")
-    print(avail_res[v_res])
     if is_video:
-        print("if enter")
         ydl_opts = {
         "format": f"bv*[ext=mp4][height={avail_res[v_res]}]+ba[ext=m4a]/mp4",
         "outtmpl": os.path.join(path, "%(title)s.%(ext)s"),
