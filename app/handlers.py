@@ -29,17 +29,24 @@ async def cmd_settings(callback: CallbackQuery):
 @router.callback_query((F.data == "8K") | (F.data == "4K") | (F.data == "1440P") | (F.data == "1080P") | (F.data == "720P") | (F.data == "480P") | (F.data == "360P") | (F.data == "240P") | (F.data == "144P"))
 async def cmd_setres(callback: CallbackQuery):
     await callback.answer("")
-    if "✅" in callback.data:
-        return
-    for i,r in enumerate(kb.buttons):
-        kb.buttons[i] = kb.buttons[i].replace("✅","")
-        if r == callback.data:
-            kb.buttons[i] += "✅"
+    for i in range(len(kb.res_buttons)):
+        kb.res_buttons[i] = kb.res_buttons[i].replace("✅","")
+        if kb.res_buttons[i] == callback.data:
+            kb.res_buttons[i] += "✅"
 
     await callback.message.edit_text(
         "Что скачиваем?",
-        reply_markup=await kb.reskb())
+        reply_markup=await kb.medkb())
 
+@router.callback_query((F.data == "Auto") | (F.data == "Video + Audio") | (F.data == "Audio") | (F.data == "Video"))
+async def cmd_setres(callback: CallbackQuery):
+    await callback.answer("")
+    for i in range(len(kb.med_buttons)):
+        kb.med_buttons[i] = kb.med_buttons[i].replace("✅","")
+        if kb.med_buttons[i] == callback.data:
+            kb.med_buttons[i] += "✅"
+
+    await callback.message.edit_text("Настройки сохранены, отправте ссылку для скачивания",reply_markup=kb.main)
 
 @router.message()
 async def download(message: Message):
@@ -47,7 +54,7 @@ async def download(message: Message):
     message_s = await message.answer("Начинаем загрузку...")
     try:
         loop = asyncio.get_running_loop()
-        coru =  loop.run_in_executor(None, yt_download_sync, message, progress_queue, asyncio.get_running_loop(), str(time.time()), kb.buttons)
+        coru =  loop.run_in_executor(None, yt_download_sync, message, progress_queue, asyncio.get_running_loop(), str(time.time()), kb.res_buttons)
 
         last_percent = None
         last_update = time.time()
