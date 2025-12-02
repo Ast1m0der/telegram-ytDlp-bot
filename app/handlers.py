@@ -54,7 +54,7 @@ async def download(message: Message):
     message_s = await message.answer("Начинаем загрузку...")
     try:
         loop = asyncio.get_running_loop()
-        coru =  loop.run_in_executor(None, yt_download_sync, message, progress_queue, asyncio.get_running_loop(), str(time.time()), kb.res_buttons)
+        coru =  loop.run_in_executor(None, yt_download_sync, message, progress_queue, asyncio.get_running_loop(), str(time.time()), kb.res_buttons, kb.med_buttons)
 
         last_percent = None
         last_update = time.time()

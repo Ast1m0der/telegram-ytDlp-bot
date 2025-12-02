@@ -11,7 +11,7 @@ main = InlineKeyboardMarkup(inline_keyboard=[
 ])
 
 
-res_buttons = ["8K✅", "4K", "1440P", "1080P","720P","480P","360P","240P","144P"]
+res_buttons = ["✅8K", "4K", "1440P", "1080P","720P","480P","360P","240P","144P"]
 
 async def reskb():
     keyboard = InlineKeyboardBuilder()
@@ -22,7 +22,6 @@ async def reskb():
 med_buttons = ["Auto✅","Video + Audio", "Audio", "Video"]
 
 async def medkb():
-
     keyboard = InlineKeyboardBuilder()
     for button in med_buttons:
         keyboard.add(InlineKeyboardButton(text=button,callback_data=button.replace("✅","")))
