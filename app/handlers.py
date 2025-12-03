@@ -19,12 +19,18 @@ class Reg(StatesGroup):
 # хендлер /start
 @router.message(CommandStart())
 async def cmd_start(message: Message):
-    await message.answer("Привет, это простой бот для скачивания контента с youtube, отправь ссылку на видео/плейлист/трек и мы попытаемся его скачать",reply_markup=kb.main)
+    await message.answer(
+          '''Привет, это простой бот для скачивания контента с youtube, отправь ссылку
+            на видео/плейлист/трек и мы попытаемся его скачать",reply_markup=kb.main'''
+         )
 
 @router.callback_query(F.data == "settings")
 async def cmd_settings(callback: CallbackQuery):
     await callback.answer("")
-    await callback.message.edit_text("Выбери качество для скачивания\nЕсли доступное качество видео меньше выбранного мы скачаем в наилучшем",reply_markup= await kb.reskb())
+    await callback.message.edit_text(
+           '''Выбери качество для скачивания\nЕсли доступное качество видео меньше
+            выбранного мы скачаем в наилучшем''',reply_markup= await kb.reskb()
+          )
 
 @router.callback_query((F.data == "8K") | (F.data == "4K") | (F.data == "1440P") | (F.data == "1080P") | (F.data == "720P") | (F.data == "480P") | (F.data == "360P") | (F.data == "240P") | (F.data == "144P"))
 async def cmd_setres(callback: CallbackQuery):
@@ -54,7 +60,13 @@ async def download(message: Message):
     message_s = await message.answer("Начинаем загрузку...")
     try:
         loop = asyncio.get_running_loop()
-        coru =  loop.run_in_executor(None, yt_download_sync, message, progress_queue, asyncio.get_running_loop(), str(time.time()), kb.res_buttons, kb.med_buttons)
+        coru =  loop.run_in_executor(
+
+                None, yt_download_sync, message, progress_queue,
+                asyncio.get_running_loop(), str(time.time()),
+                kb.res_buttons, kb.med_buttons
+
+               )
 
         last_percent = None
         last_update = time.time()
@@ -68,7 +80,6 @@ async def download(message: Message):
                 await message_s.edit_text(f"Загрузка: {percent[7:-4]}")
                 last_percent = percent
         paths = await coru
-        print(paths)
     except Exception as e:
         await message_s.edit_text(f"Ошибка при загрузке: {e}")
         return
@@ -82,10 +93,11 @@ async def download(message: Message):
                     FSInputFile(path),
                     height = height,
                     width = width,
+                    request_timeout=1200
             )
             cap.release()
         else:
             await message_s.answer_audio(FSInputFile(path))
-        await message_s.delete()
         os.remove(path)
+    await message_s.delete()
     os.system(f"rm -rf {paths[0][:paths[0].rfind("/")]}")

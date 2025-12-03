@@ -15,9 +15,9 @@ def yt_download_sync(url: Message, progress_queue: asyncio.Queue, loop, path: st
             v_res = i
 
     v_med = 0
-    for i in range(len(res)):
-        if "✅" in res[i]:
-            v_res = i
+    for i in range(len(med)):
+        if "✅" in med[i]:
+            v_med = i
 
     base_opts = {"quiet": True, "skip_download": True}
     info = YoutubeDL(base_opts).extract_info(url.text, download=False)
@@ -33,7 +33,7 @@ def yt_download_sync(url: Message, progress_queue: asyncio.Queue, loop, path: st
 
     else:
 
-        path = _download_single(url.text, progress_queue, loop, path, v_res)
+        path = _download_single(url.text, progress_queue, loop, path, v_res, v_med)
         results.append(path)
 
     return results
@@ -51,26 +51,21 @@ def _download_single(url: str, progress_queue: asyncio.Queue, loop, path, v_res,
     info = YoutubeDL({"quiet": True, "skip_download": True}).extract_info(url, download=False)
     avail_res = ["4320","2160","1440","1080","720","480","360","240","140"]
     is_video = not "music" in url
-
     if (is_video and v_med == 0) or v_med == 1 :
         ydl_opts = {
-        "format": f"bv*[ext=mp4][height={avail_res[v_res]}]+ba[ext=m4a]/mp4",
+        "max_filesize": 2*1024*1024*1024,
+        "format": f"bv*[vcodec!*=av01][height<={avail_res[v_res]}][filesize<2G]+ba[filesize<2G]",
         "outtmpl": os.path.join(path, "%(title)s.%(ext)s"),
         "progress_hooks": [my_hook],
         "quiet": True,
         "retries": 10,
-        "prefer_ffmpeg": True,
         "merge_output_format": "mp4",
         "cookiefile":"cookies.txt",
-	"postprocessors": [{
-    		"key": "FFmpegVideoConvertor",
-    		"preferedformat": "mp4"
-	}]
-	}
-
+    }
     elif (not is_video and v_med == 0) or v_med == 2:
         ydl_opts = {
-            "format": "bestaudio",
+            "max_filesize": 2*1024*1024*1024,
+            "format": "bestaudio[filesize<2G]/best[filesize<2G]",
             "outtmpl": os.path.join(path, "%(title)s.%(ext)s"),
             "progress_hooks": [my_hook],
             "quiet": True,
@@ -86,7 +81,8 @@ def _download_single(url: str, progress_queue: asyncio.Queue, loop, path, v_res,
         }
     elif v_med == 3:
         ydl_opts = {
-            "format": f"bv*[ext=mp4][height={avail_res[v_res]}]/mp4",
+            "max_filesize": 2*1024*1024*1024,
+            "format": f"bv*[vcodec!*=av01][height<={avail_res[v_res]}][filesize<2G]",
             "outtmpl": os.path.join(path, "%(title)s.%(ext)s"),
             "progress_hooks": [my_hook],
             "quiet": True,
@@ -96,16 +92,19 @@ def _download_single(url: str, progress_queue: asyncio.Queue, loop, path, v_res,
             "cookiefile": "cookies.txt",
             "postprocessors": [{
                 "key": "FFmpegVideoConvertor",
-                "preferedformat": "mp4"
-            }]
+                "preferedformat": "mp4",
+            },
+            {
+                'key': 'FFmpegAudioRemover'
+            }
+          ]
         }
     else:
         return ""
-    print(ydl_opts)
     with YoutubeDL(ydl_opts) as ydl:
         result = ydl.extract_info(url, download=True)
         filepath = ydl.prepare_filename(result)
 
-    if is_video:
-        return filepath
-    return filepath.rsplit(".", 1)[0] + ".mp3"
+    if (not is_video and v_med == 0) or v_med == 2:
+        return filepath.rsplit(".", 1)[0] + ".mp3"
+    return filepath
